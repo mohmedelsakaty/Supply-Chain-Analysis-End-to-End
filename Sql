@@ -1,0 +1,303 @@
+/* ============================================================
+   DATA PREPARATION & ENRICHMENT
+   Purpose: Validate data and enrich table with derived metrics
+   ============================================================ */
+
+-- Quick sanity check: preview sample records
+SELECT TOP (10) *
+FROM dbo.Amit;
+
+
+-- Ensure IdleTime column exists (LeadTime - TransitTime)
+IF NOT EXISTS (
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'dbo'
+      AND TABLE_NAME = 'Amit'
+      AND COLUMN_NAME = 'IdleTime'
+)
+BEGIN
+    ALTER TABLE dbo.Amit
+    ADD IdleTime INT;
+END;
+
+
+-- Populate IdleTime (buffer or waiting time in supply chain)
+UPDATE dbo.Amit
+SET IdleTime = LeadTimeDays - TransitTimeDays;
+
+
+-- Ensure Profit column exists
+IF NOT EXISTS (
+    SELECT 1
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = 'dbo'
+      AND TABLE_NAME = 'Amit'
+      AND COLUMN_NAME = 'Profit'
+)
+BEGIN
+    ALTER TABLE dbo.Amit
+    ADD Profit DECIMAL(18,2);
+END;
+
+
+-- Calculate Profit per order line
+UPDATE dbo.Amit
+SET Profit = Revenue - TotalCost;
+
+
+-- Verify enriched columns
+SELECT TOP (10) *
+FROM dbo.Amit;
+
+
+
+/* ============================================================
+   WAREHOUSE ANALYSIS
+   Purpose: Measure warehouse speed, idle time, and reliability
+   ============================================================ */
+
+-- Average transit and idle time by warehouse
+SELECT
+    Warehouse,
+    ROUND(AVG(TransitTimeDays), 2) AS AvgTransitTime,
+    ROUND(AVG(IdleTime), 2)        AS AvgIdleTime
+FROM dbo.Amit
+GROUP BY Warehouse
+ORDER BY AvgIdleTime DESC;
+
+
+-- On-time vs late delivery performance by warehouse
+SELECT
+    Warehouse,
+    SUM(CASE WHEN OnTimeDelivery = 1 THEN 1 ELSE 0 END) AS OnTime_Count,
+    SUM(CASE WHEN OnTimeDelivery = 0 THEN 1 ELSE 0 END) AS Late_Count,
+    CAST(
+        100.0 * SUM(CASE WHEN OnTimeDelivery = 1 THEN 1 ELSE 0 END) / COUNT(*)
+        AS DECIMAL(5,2)
+    ) AS OnTime_Pct,
+    CAST(
+        100.0 * SUM(CASE WHEN OnTimeDelivery = 0 THEN 1 ELSE 0 END) / COUNT(*)
+        AS DECIMAL(5,2)
+    ) AS Late_Pct
+FROM dbo.Amit
+GROUP BY Warehouse
+ORDER BY Late_Pct DESC;
+
+
+
+/* ============================================================
+   SUPPLIER ANALYSIS
+   Purpose: Evaluate supplier profitability, speed, and volume
+   ============================================================ */
+
+-- Core supplier KPIs (revenue, profit, transit, reliability)
+WITH supplier_kpi AS (
+    SELECT
+        Supplier,
+        SUM(Revenue) AS total_revenue,
+        SUM(Profit)  AS total_profit,
+        AVG(TransitTimeDays) AS avg_transit_days,
+        AVG(CASE WHEN OnTimeDelivery = 1 THEN 1.0 ELSE 0.0 END) AS ontime_rate
+    FROM dbo.Amit
+    GROUP BY Supplier
+)
+SELECT *
+FROM supplier_kpi
+ORDER BY total_profit DESC;
+
+
+-- Detailed supplier operational summary
+SELECT
+    Supplier,
+    COUNT(*)              AS orders,
+    SUM(Quantity)         AS total_qty,
+    SUM(Revenue)          AS total_revenue,
+    SUM(Profit)           AS total_profit,
+    AVG(TransitTimeDays)  AS avg_transit_days,
+    AVG(CASE WHEN OnTimeDelivery = 1 THEN 1.0 ELSE 0.0 END) AS ontime_rate
+FROM dbo.Amit
+GROUP BY Supplier
+ORDER BY total_profit DESC;
+
+
+-- Suppliers with longest average lead times
+SELECT
+    Supplier,
+    ROUND(AVG(LeadTimeDays), 2) AS AvgLeadTimeDays
+FROM dbo.Amit
+GROUP BY Supplier
+ORDER BY AvgLeadTimeDays DESC;
+
+
+-- Suppliers with fastest lead times
+SELECT
+    Supplier,
+    ROUND(AVG(LeadTimeDays), 2) AS AvgLeadTimeDays
+FROM dbo.Amit
+GROUP BY Supplier
+ORDER BY AvgLeadTimeDays ASC;
+
+
+-- Highest shipment volumes by supplier
+SELECT
+    Supplier,
+    SUM(Quantity) AS TotalVolume
+FROM dbo.Amit
+GROUP BY Supplier
+ORDER BY TotalVolume DESC;
+
+
+-- Profit contribution ranking (loss-makers visible first)
+SELECT
+    Supplier,
+    ROUND(SUM(Profit), 2) AS TotalProfit
+FROM dbo.Amit
+GROUP BY Supplier
+ORDER BY TotalProfit ASC;
+
+
+
+/* ============================================================
+   SHIPPING METHOD ANALYSIS
+   Purpose: Compare speed, cost efficiency, and profitability
+   ============================================================ */
+
+-- Average transit time by shipping method
+SELECT
+    ShippingMethod,
+    ROUND(AVG(TransitTimeDays), 2) AS AvgTransitTime
+FROM dbo.Amit
+GROUP BY ShippingMethod
+ORDER BY AvgTransitTime ASC;
+
+
+-- Cost efficiency: cost per shipped unit
+SELECT
+    ShippingMethod,
+    CAST(
+        SUM(TotalCost) / NULLIF(SUM(Quantity), 0)
+        AS DECIMAL(10,2)
+    ) AS CostPerUnit
+FROM dbo.Amit
+GROUP BY ShippingMethod
+ORDER BY CostPerUnit DESC;
+
+
+-- Shipment volume by shipping method
+SELECT
+    ShippingMethod,
+    SUM(Quantity) AS TotalVolume
+FROM dbo.Amit
+GROUP BY ShippingMethod
+ORDER BY TotalVolume DESC;
+
+
+-- Profitability by shipping method
+SELECT
+    ShippingMethod,
+    SUM(Profit) AS TotalProfit
+FROM dbo.Amit
+GROUP BY ShippingMethod
+ORDER BY TotalProfit DESC;
+
+
+
+/* ============================================================
+   ADVANCED SUPPLIER SERVICE & RISK ANALYSIS
+   Purpose: Balance profit vs service reliability risk
+   ============================================================ */
+
+-- Supplier service quality and unit economics
+WITH supplier_service AS (
+    SELECT
+        Supplier,
+        COUNT(*) AS order_lines,
+        SUM(Quantity) AS total_qty,
+        SUM(Revenue) AS total_revenue,
+        SUM(Profit)  AS total_profit,
+        AVG(TransitTimeDays) AS avg_transit_days,
+        AVG(CASE WHEN OnTimeDelivery = 1 THEN 1.0 ELSE 0.0 END) AS ontime_rate,
+        SUM(CASE WHEN OnTimeDelivery = 0 THEN 1 ELSE 0 END) AS late_orders,
+        SUM(Profit) / NULLIF(SUM(Quantity), 0) AS profit_per_unit
+    FROM dbo.Amit
+    GROUP BY Supplier
+),
+supplier_tradeoff AS (
+    SELECT
+        Supplier,
+        SUM(Profit) AS total_profit,
+        AVG(CASE WHEN OnTimeDelivery = 1 THEN 1.0 ELSE 0.0 END) AS ontime_rate,
+        SUM(Profit) *
+        (1 - AVG(CASE WHEN OnTimeDelivery = 1 THEN 1.0 ELSE 0.0 END)) AS risk_adjusted_profit
+    FROM dbo.Amit
+    GROUP BY Supplier
+)
+SELECT TOP (1) *
+FROM dbo.Amit;
+
+
+
+/* ============================================================
+   ROUTE PERFORMANCE ANALYSIS
+   Purpose: Identify profitable and risky trade lanes
+   ============================================================ */
+
+WITH route_kpi AS (
+    SELECT
+        YEAR(OrderDate) AS order_year,
+        CountryFrom,
+        CountryTo,
+        COUNT(DISTINCT OrderID) AS orders,
+        SUM(Quantity) AS total_qty,
+        SUM(Revenue)  AS total_revenue,
+        SUM(Profit)   AS total_profit,
+        AVG(TransitTimeDays) AS avg_transit_days
+    FROM dbo.Amit
+    GROUP BY
+        YEAR(OrderDate),
+        CountryFrom,
+        CountryTo
+)
+SELECT *
+FROM route_kpi
+ORDER BY total_profit DESC;
+
+
+
+/* ============================================================
+   PRODUCT–SUPPLIER PERFORMANCE
+   Purpose: Spot high-profit SKUs and quality risks
+   ============================================================ */
+
+WITH product_supplier AS (
+    SELECT
+        Supplier,
+        SKU,
+        ProductName,
+        SUM(Quantity) AS total_qty,
+        SUM(Profit)   AS total_profit,
+        AVG(DefectRate)     AS avg_defect_rate,
+        AVG(GrossMarginPct) AS avg_margin
+    FROM dbo.Amit
+    GROUP BY Supplier, SKU, ProductName
+),
+supplier_ontime AS (
+    SELECT
+        Supplier,
+        AVG(CASE WHEN OnTimeDelivery = 1 THEN 1.0 ELSE 0.0 END) AS ontime_rate
+    FROM dbo.Amit
+    GROUP BY Supplier
+)
+SELECT
+    ps.Supplier,
+    ps.ProductName,
+    ps.total_qty,
+    ps.total_profit,
+    ps.avg_margin,
+    ps.avg_defect_rate
+FROM product_supplier ps
+JOIN supplier_ontime s
+    ON ps.Supplier = s.Supplier
+ORDER BY ps.total_profit DESC;
+
