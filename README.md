@@ -1,6 +1,6 @@
 
 
-# 📊 Data Analytics Final Project
+# 📊 Data Analytics Project
 
 ## 🔍 Overview
 
