@@ -1,49 +1,129 @@
+📊 Operations & Supply Chain Analytics — End-to-End Project
+🔍 Project Summary
 
+An operations-focused supply chain analytics project designed to improve revenue performance through better operational decisions.
+The project analyzes lead times, delivery performance, and supplier efficiency to identify operational bottlenecks, quantify revenue loss, and evaluate What-If scenarios for operational improvement.
 
-# 📊 Data Analytics Project
+🛠️ Project Workflow
+1️⃣ Data Preparation
 
-## 🔍 Overview
+Cleaned and structured raw operational supply chain data
 
-This repository contains a **technical end-to-end data analytics project** built as a final case study.
-The focus is on turning raw data into **actionable, decision-ready insights** using analysis, modeling, and dashboards.
+Resolved missing values, inconsistencies, and data-type issues
 
-## 🛠️ Project Workflow
+Tools: Excel, Python
 
-1. **📁 Data Preparation**
+2️⃣ Operational Analysis & Revenue Impact
 
-   * Cleaned, validated, and structured raw data using **Excel** and **Python**
-   * Handled data quality issues and transformations
+Built operational KPIs using SQL (CTEs, aggregations) and Python
 
-2. **📈 Data Analysis**
+Analyzed:
 
-   * Performed exploratory and KPI analysis using **SQL** and **Python**
-   * Used **CTEs, aggregations**, and Python analysis logic to extract insights
+Order fulfillment performance
 
-3. **📊 Data Modeling & Visualization**
+Lead times and delays
 
-   * Built an analytical data model
-   * Developed **Power BI dashboards** with **DAX measures**
-   * Created dashboards tailored to different decision levels
+Supplier operational efficiency
 
-## 📌 Dashboards
+Identified operational bottlenecks affecting revenue
 
-* **🏢 Executive Overview** – high-level KPIs and performance trends
-* **🚚 Supply Chain** – efficiency, delivery, and operational metrics
-* **📦 Product Analysis** – product-level performance and comparisons
+Quantified revenue loss caused by extended lead times
 
-## ⚙️ Tools
+Tools: SQL, Python
 
-* 📊 Excel
-* 🧮 SQL
-* 🐍 Python
-* 📉 Power BI
+3️⃣ Data Modeling & Visualization
 
+Designed an operational data model
 
-## 🎯 Objective
+Developed Power BI dashboards with DAX measures
+
+Dashboards optimized for operational and executive decisions
+
+📊 Dashboards
+🏢 Executive Operations Overview
+
+Revenue impact of operational performance
+
+On-time delivery and service-level KPIs
+
+High-level operational trends
+
+🚚 Supply Chain Operations
+
+Lead-time distribution and delay analysis
+
+Supplier bottlenecks and efficiency metrics
+
+On-time vs delayed order performance
+
+📦 Product Operations Analysis
+
+Product-level operational performance
+
+Revenue impact by SKU
+
+Volume vs delay trade-offsProduct-level profitability
+
+Volume vs margin analysis
+
+Performance comparison across SKUs
+
+📉 Bottleneck & Profit Loss Analysis
+
+Identified critical supply chain bottlenecks affecting delivery performance
+
+Quantified profit loss caused by extended lead times
+
+Highlighted suppliers and products contributing most to delays
+
+Enabled prioritization of improvement actions based on financial impact
+
+🔮 What-If Analysis — Lead Time Scenarios
+
+Built What-If scenarios to simulate changes in lead times
+
+Measured the impact on:
+
+Profit
+
+Revenue
+
+Service level
+
+Compared current-state vs optimized lead-time scenarios
+
+Supported data-driven decisions for:
+
+Supplier selection
+
+Inventory and planning optimization
+
+Tools
+
+Power BI What-If Parameters
+
+DAX scenario measures
+
+⚙️ Tech Stack
+
+Excel – data cleaning & validation
+
+SQL – KPI logic, CTEs, aggregations
+
+Python – analysis & preprocessing
+
+Power BI – data modeling, DAX, dashboards
+
+🎯 Project Objective
 
 Demonstrate the ability to:
 
-* Work with raw, unstructured data
-* Apply **technical analysis** using SQL, Python, and DAX
-* Build dashboards that support **real business decisions**
+Work with raw, unstructured operational data
 
+Apply SQL, Python, and DAX for analytical problem-solving
+
+Identify bottlenecks and profit drivers
+
+Use What-If analysis to support real business decisions
+
+Deliver executive-ready and technical operation dashboards
